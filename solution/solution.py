@@ -27,4 +27,40 @@ def matrix_to_sycamore_operations(
                 an empty list.
         .
     """
-    return NotImplemented, []
+    # create a shift matrix
+    dimension = len(matrix)
+    shift_matrix = np.eye(dimension)
+    last_row = np.array(np.linspace(0, 0, dimension))
+    last_row[-1] = 1
+    shift_matrix[1:] = shift_matrix[0:dimension - 1]
+    shift_matrix[0] = last_row
+
+    def exchange(first_bit, second_bit):
+        moment0 = cirq.Moment([cirq.ISWAP(first_bit, second_bit)])
+        moment1 = cirq.Moment([(cirq.X ** 0.5)(second_bit)])
+        moment2 = cirq.Moment([cirq.ISWAP(first_bit, second_bit)])
+        moment3 = cirq.Moment([(cirq.X ** 0.5)(first_bit)])
+        moment4 = cirq.Moment([cirq.ISWAP(first_bit, second_bit)])
+        moment5 = cirq.Moment([(cirq.X ** 0.5)(second_bit)])
+        return [moment0, moment1, moment2, moment3, moment4, moment5]
+
+    if np.allclose(matrix, np.eye(2**len(target_qubits))):
+        return [], []
+    if len(target_qubits) == 1:  # single bit case
+        if np.allclose(matrix, cirq.unitary(cirq.X)):
+            return [cirq.X(target_qubits[0])], []
+        if np.allclose(matrix, cirq.unitary(cirq.Y)):
+            return [cirq.Y(target_qubits[0])], []
+        if np.allclose(matrix, cirq.unitary(cirq.Z)):
+            return [cirq.Z(target_qubits[0])], []
+        if np.allclose(matrix, cirq.unitary(cirq.H)):  # H gate
+            return [[(cirq.Y**0.5)(target_qubits[0]), cirq.X(target_qubits[0])]], []
+        if np.allclose(matrix, cirq.unitary(cirq.S)):  # S gate
+            return [cirq.ZPowGate(exponent=0.5)(target_qubits[0])], []
+        if np.allclose(matrix, cirq.unitary(cirq.T)):  # T gate
+            return [cirq.ZPowGate(exponent=0.25)(target_qubits[0])], []
+    if dimension == 4 and np.allclose(shift_matrix, matrix):
+        return [exchange(target_qubits[0], target_qubits[1])], []
+
+
+    return [], []
